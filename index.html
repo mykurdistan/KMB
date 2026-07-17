@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl" style="background: linear-gradient(45deg, #0f0c29, #302b63, #24243e); width: 100%; height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>KMB Control Pro</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="Screenshot_20260303-065649_InShot.jpg">
+    <meta name="theme-color" content="#0f0c29">
+
+    <style>
+        :root {
+            --sys-color: #00ff88;
+            --main-font-size: 16px;
+            --bg-color: linear-gradient(45deg, #0f0c29, #302b63, #24243e);
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+
+        html, body { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--bg-color);
+            display: flex; 
+            flex-direction: column;
+            color: white; 
+            font-size: var(--main-font-size); 
+            transition: background 0.5s ease;
+            position: relative;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ستایلی چینی شەفرافی SVG بۆ پشتەوەی ئەپەکە */
+        .bg-pattern-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* بۆ ئەوەی ڕێگری لە داگرتنی دوگمەکان نەکات */
+            overflow: hidden;
+        }
+        .bg-pattern-overlay svg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .settings-toggle {
+            position: absolute; 
+            top: calc(15px + env(safe-area-inset-top)); 
+            left: calc(15px + env(safe-area-inset-left));
+            width: 50px; height: 50px; background: var(--glass); border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            cursor: pointer; z-index: 1001; backdrop-filter: blur(10px); border: 1px solid var(--border);
+        }
+
+        .bar { width: 28px; height: 3px; background-color: var(--sys-color); border-radius: 2px; transition: 0.4s; }
+        .sidebar.open ~ .settings-toggle .bar:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+        .sidebar.open ~ .settings-toggle .bar:nth-child(2) { opacity: 0; }
+        .sidebar.open ~ .settings-toggle .bar:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+        .sidebar {
+            position: fixed; top: 0; left: -360px; width: 320px; height: 100%;
+            background: rgba(10, 10, 25, 0.01);
+            backdrop-filter: blur(50px);
+            -webkit-backdrop-filter: blur(50px);
+            border-right: 1px solid rgba(255, 255, 255, 0.12);
+            padding: calc(80px + env(safe-area-inset-top)) 25px calc(30px + env(safe-area-inset-bottom));
+            z-index: 1000; transition: 0.4s cubic-bezier(0.77, 0.2, 0.05, 1.0); overflow-y: auto; text-align: right;
+            box-shadow: 15px 0 40px rgba(0, 0, 0, 0.4);
+        }
+        .sidebar.open { left: 0; }
+
+        .label { font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 8px; color: var(--sys-color); opacity: 0.8; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .opt-btn {
+            background: rgba(255, 255, 255, 0.04); 
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: white; 
+            padding: 12px 18px; 
+            border-radius: 50px; 
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            font-size: 0.85em;
+            position: relative; 
+            text-align: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 
+                0 6px 15px rgba(0, 0, 0, 0.3), 
+                inset 0 3px 5px rgba(255, 255, 255, 0.12), 
+                inset 0 -3px 5px rgba(0, 0, 0, 0.3);
+        }
+        .opt-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 10px 20px rgba(0, 0, 0, 0.4), 
+                inset 0 3px 5px rgba(255, 255, 255, 0.2), 
+                inset 0 -3px 5px rgba(0, 0, 0, 0.4);
+        }
+        .opt-btn:active {
+            transform: translateY(1px);
+            box-shadow: 
+                0 3px 8px rgba(0, 0, 0, 0.2), 
+                inset 0 4px 6px rgba(0, 0, 0, 0.5), 
+                inset 0 -2px 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .game-badge {
+            position: absolute; top: -5px; right: -5px; background: #ff0044; color: white;
+            font-size: 0.75rem; font-weight: bold; min-width: 20px; height: 20px; padding: 0 4px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 10px #ff0044; border: 1.5px solid #08090f; animation: pulseBadge 1.5s infinite alternate;
+        }
+        @keyframes pulseBadge { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }
+
+        .time-capsule {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255, 0, 85, 0.1); border: 1px solid rgba(255, 0, 85, 0.3);
+            padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; color: #ff4b2b;
+            margin-top: 8px; font-weight: bold; letter-spacing: 1px;
+        }
+
+        .name-input { 
+            width: 100%; 
+            padding: 12px 20px; 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(255,255,255,0.12); 
+            border-radius: 50px; 
+            color: white; 
+            outline: none; 
+            text-align: right; 
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+            transition: 0.3s;
+        }
+        .name-input:focus {
+            border-color: var(--sys-color);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3), 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        .content { 
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; 
+            z-index: 1; position: absolute; top: 0; left: 0;
+        }
+
+        .glass-card { 
+            position: relative;
+            background: rgba(255, 255, 255, 0.04); 
+            backdrop-filter: blur(35px); 
+            -webkit-backdrop-filter: blur(35px);
+            border: 1.2px solid rgba(255, 255, 255, 0.35); 
+            padding: 35px 25px; 
+            border-radius: 35px; 
+            width: 340px; 
+            min-height: 260px;
+            text-align: center; 
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.3),
+                inset 0 0 15px rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glass-card .shine {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                115deg,
+                rgba(255, 255, 255, 0) 25%,
+                rgba(255, 255, 255, 0.12) 40%,
+                rgba(255, 255, 255, 0.22) 50%,
+                rgba(255, 255, 255, 0.12) 60%,
+                rgba(255, 255, 255, 0) 75%
+            );
+            pointer-events: none;
+        }
+
+        .glass-card .glow {
+            position: absolute;
+            width: 45px;
+            height: 3px;
+            background: #ffffff;
+            border-radius: 50%;
+            filter: blur(1px);
+            box-shadow: 
+                0 0 8px rgba(255, 255, 255, 1),
+                0 0 15px rgba(255, 255, 255, 0.8);
+        }
+
+        .glass-card .glow-top { top: -1.5px; left: 45%; }
+        .glass-card .glow-bottom { bottom: -1.5px; left: 68%; }
+        .glass-card .card-content { z-index: 1; width: 100%; }
+
+        #user-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .sub-title { font-size: 15px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 20px; }
+        #number { font-size: 75px; font-weight: 800; color: var(--sys-color); margin: 15px 0; }
+
+        .credits {
+            position: absolute; bottom: calc(15px + env(safe-area-inset-bottom)); right: calc(15px + env(safe-area-inset-right));
+            font-size: 0.7rem; color: rgba(255, 255, 255, 0.25); direction: ltr; z-index: 10; pointer-events: none;
+        }
+
+        input[type="range"] { width: 100%; height: 6px; accent-color: var(--sys-color); cursor: pointer; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); visibility: hidden; opacity: 0; transition: 0.3s; z-index: 999; backdrop-filter: blur(3px); }
+        .sidebar.open ~ .overlay { visibility: visible; opacity: 1; }
+
+        #bet-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 6000;
+            justify-content: center; align-items: center; padding: 15px; direction: rtl;
+        }
+        .bet-card { 
+            background: #11121d; border: 1px solid rgba(255,255,255,0.1); 
+            padding: 25px; border-radius: 25px; width: 100%; max-width: 320px; 
+            text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .bet-display { font-size: 3rem; font-weight: 800; color: var(--sys-color); margin: 10px 0; }
+        .modal-btn-group { display: flex; gap: 10px; width: 100%; margin-top: 20px; }
+        
+        .btn { 
+            flex: 1; padding: 12px 10px; font-size: 1rem; font-weight: bold; 
+            background: transparent; border: 2px solid #00ffff; color: #00ffff; 
+            border-radius: 20px; cursor: pointer; transition: 0.2s; text-align: center;
+        }
+
+        #name-welcome-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 12, 0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 9999; justify-content: center; align-items: center; padding: 20px; direction: rtl;
+        }
+        .welcome-card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 136, 0.3);
+            padding: 35px 25px; border-radius: 30px; width: 100%; max-width: 330px;
+            text-align: center; box-shadow: 0 0 30px rgba(0, 255, 136, 0.15);
+            animation: modalFadeIn 0.5s ease;
+        }
+        @keyframes modalFadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .welcome-input {
+            width: 100%; padding: 14px; background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; 
+            color: white; outline: none; text-align: center; font-size: 1.1rem;
+            margin: 25px 0 15px; transition: 0.3s;
+        }
+        .welcome-input:focus { border-color: var(--sys-color); box-shadow: 0 0 10px rgba(0, 255, 136, 0.3); }
+
+        /* ================== ستایلی یاری Red Line ================== */
+        #game-container { 
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background-color: #08090f; z-index: 5000; overflow: hidden; box-sizing: border-box;
+        }
+        .info-panel { 
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
+            display: flex; gap: 30px; font-size: 1.1rem; font-weight: bold; z-index: 5050; 
+            background: rgba(0, 0, 0, 0.6); padding: 8px 20px; border-radius: 30px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); direction: rtl; pointer-events: none;
+        }
+        #game-board { 
+            width: 100%; height: 100%; position: relative; 
+            background: radial-gradient(circle, #151623 0%, #08090f 100%); touch-action: none; 
+        }
+        #player { 
+            position: absolute; width: 18px; height: 18px; background-color: #00ffcc; 
+            border-radius: 4px; box-shadow: 0 0 15px #00ffcc; transform: translate(-50%, -50%); 
+            pointer-events: none; z-index: 5010; left: 50%; top: 50%;
+        }
+        .laser { position: absolute; background-color: #ff0055; box-shadow: 0 0 15px #ff0055; border-radius: 10px; z-index: 5005; }
+        
+        .screen { 
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(8, 9, 15, 0.95); justify-content: center; align-items: center; 
+            flex-direction: column; z-index: 5100; text-align: center; padding: 20px; direction: rtl; 
+        }
+        
+        .screen h2 { font-size: 2.2rem; margin-bottom: 15px; font-weight: 700; }
+        .screen p { font-size: 1.1rem; margin-bottom: 25px; color: #eee; font-weight: normal; }
+        
+        .screen .game-btn { 
+            font-size: 0.9rem !important; 
+            padding: 10px 24px !important; 
+            border-radius: 18px !important; 
+            width: auto !important; 
+            min-width: 150px !important;
+            max-width: 210px !important;
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+        }
+        .screen .game-btn:hover {
+            background: rgba(0, 255, 204, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+        }
+
+        /* ================== ستایلی یاری Traffic Racer 2.5 ================== */
+        #traffic-container {
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #1a1a1a; z-index: 5000; overflow: hidden;
+        }
+        #trafficCanvas {
+            display: block; margin: 0 auto; background: #222; width: 100%; height: 100%; max-width: 450px;
+        }
+        .traffic-hud {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); border: 1px solid var(--sys-color);
+            padding: 10px 20px; border-radius: 20px; display: flex; gap: 20px;
+            font-weight: bold; font-size: 1rem; color: white; z-index: 5010; pointer-events: none;
+        }
+
+        /* ================== گەراجی سەیارەکان ================== */
+        #garage-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5,5,10,0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            z-index: 6050; justify-content: center; align-items: center; padding: 20px; direction: rtl;
+        }
+        .garage-card {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 25px; border-radius: 35px; width: 100%; max-width: 350px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+        }
+        .garage-list {
+            display: flex; flex-direction: column; gap: 12px; margin: 20px 0;
+            max-height: 300px; overflow-y: auto; padding-right: 5px;
+        }
+        .garage-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 15px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 20px;
+            cursor: pointer; transition: 0.2s;
+        }
+        .garage-item:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: var(--sys-color);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- چینی SVG وەک باکگراوندێکی شەفاف و ڕوون لە پشت گشت بابەتەکان -->
+    <div class="bg-pattern-overlay">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <pattern id="dotGrid" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
+              <circle cx="4" cy="4" r="2" fill="#ffffff" opacity="0.3" />
+            </pattern>
+          </defs>
+          <g fill="none">
+            <circle cx="550" cy="30" r="90" fill="url(#dotGrid)" />
+            <circle cx="170" cy="420" r="80" fill="url(#dotGrid)" />
+            <g transform="rotate(-35, 400, 225)">
+              <rect x="680" y="-120" width="55" height="300" rx="27.5" fill="#ffffff" opacity="0.25" />
+              <rect x="755" y="-50" width="55" height="260" rx="27.5" fill="#ffffff" opacity="0.15" />
+              <rect x="830" y="20" width="55" height="220" rx="27.5" fill="#ffffff" opacity="0.08" />
+              <rect x="-130" y="180" width="55" height="220" rx="27.5" fill="#ffffff" opacity="0.08" />
+              <rect x="-55" y="230" width="55" height="280" rx="27.5" fill="#ffffff" opacity="0.25" />
+              <rect x="20" y="290" width="55" height="240" rx="27.5" fill="#ffffff" opacity="0.12" />
+              <line x1="100" y1="0" x2="100" y2="400" stroke="#ffffff" stroke-width="1.5" opacity="0.18" />
+              <line x1="220" y1="150" x2="220" y2="550" stroke="#ffffff" stroke-width="1.5" opacity="0.25" />
+              <line x1="580" y1="-100" x2="580" y2="300" stroke="#ffffff" stroke-width="1.5" opacity="0.25" />
+              <line x1="650" y1="-50" x2="650" y2="350" stroke="#ffffff" stroke-width="1.5" opacity="0.18" />
+            </g>
+            <circle cx="50" cy="30" r="6" stroke="#ffffff" stroke-width="1.5" opacity="0.4" />
+            <circle cx="55" cy="80" r="4" stroke="#ffffff" stroke-width="1" opacity="0.3" />
+            <circle cx="200" cy="250" r="5" stroke="#ffffff" stroke-width="1.5" opacity="0.4" />
+            <circle cx="280" cy="315" r="7" stroke="#ffffff" stroke-width="1.5" opacity="0.4" />
+            <circle cx="530" cy="170" r="5" stroke="#ffffff" stroke-width="1.5" opacity="0.4" />
+            <circle cx="690" cy="425" r="7" stroke="#ffffff" stroke-width="1.5" opacity="0.4" />
+            <circle cx="150" cy="50" r="3" fill="#ffffff" opacity="0.6" />
+            <circle cx="215" cy="335" r="3" fill="#ffffff" opacity="0.6" />
+            <circle cx="475" cy="160" r="2.5" fill="#ffffff" opacity="0.5" />
+          </</g>
+        </svg>
+    </div>
+
+    <div id="name-welcome-modal">
+        <div class="welcome-card">
+            <h2 style="color: var(--sys-color); font-weight: bold; font-size: 1.5rem;">بەخێربێیت 🎮</h2>
+            <p style="color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-top: 5px;">تکایە ناوی خۆت بنووسە بۆ دەستپێکردن</p>
+            <input type="text" id="welcomeNameInput" class="welcome-input" placeholder="ناوەکەت لێرە بنووسە..." maxlength="20">
+            <button class="btn" style="border-color: var(--sys-color); color: var(--sys-color); width: 100%; border-radius: 15px; padding: 12px;" onclick="submitWelcomeName()">تۆمارکردن و چوونەژوورەوە</button>
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <h2 style="font-weight: 300; margin-bottom: 15px;">ڕێکخستنەکان</h2>
+
+        <p class="label">ئەرکی ڕۆژانە 🎯</p>
+        <div id="mission-box" style="margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255, 255, 255, 0.2); border-radius: 15px; font-size: 0.95rem; display: none; text-align: center;">
+            <div id="mission-text" style="color: var(--sys-color); font-weight: bold; font-size: 0.85rem; line-height: 1.4;">بارکردنی ئەرکی ڕۆژانە...</div>
+            <div id="mission-status-lbl" style="margin-top: 5px; font-size: 0.8rem; font-weight: bold; color: #ffcc00;"></div>
+        </div>
+        
+        <p class="label">یاریەکان</p>
+        <div style="text-align: center; margin-bottom: 15px; display: flex; flex-direction: column; gap: 12px;">
+            <button class="opt-btn" style="width: 100%; background: linear-gradient(135deg, rgba(255, 0, 85, 0.4), rgba(153, 0, 51, 0.4)); font-weight: bold; border-color: rgba(255, 0, 85, 0.35); padding: 15px 10px;" onclick="openBetModal()">
+                یاری Red Line 🎮
+                <div id="badge-count" class="game-badge">3</div>
+            </button>
+            
+            <button class="opt-btn" style="width: 100%; background: linear-gradient(135deg, rgba(0, 198, 255, 0.4), rgba(0, 114, 255, 0.4)); font-weight: bold; border-color: rgba(0, 198, 255, 0.35); padding: 15px 10px;" onclick="startTrafficRacerGame()">
+                یاری Traffic Racer  🏎️
+            </button>
+            
+            <div id="time-left-box" class="time-capsule">--:--</div>
+        </div>
+
+        <p class="label">ناوی بەکارهێنەر (مۆبایل)</p>
+        <input type="text" id="nameInput" class="name-input" placeholder="ناوەکەت بنووسە..." oninput="saveNameLocal(this.value)">
+
+        <p class="label">ڕەنگی نووسین و سیستەم</p>
+        <div class="btn-grid">
+            <button class="opt-btn" style="color:#00ff88" onclick="setSystemColor('#00ff88')">سەوز</button>
+            <button class="opt-btn" style="color:#00d4ff" onclick="setSystemColor('#00d4ff')">شین</button>
+            <button class="opt-btn" style="color:#ff4b2b" onclick="setSystemColor('#ff4b2b')">سوور</button>
+            <button class="opt-btn" style="color:#f9d423" onclick="setSystemColor('#f9d423')">زەرد</button>
+        </div>
+
+        <p class="label">ڕەنگی پشتەوە</p>
+        <div class="btn-grid">
+            <!-- ئێستا دوگمەی زەرد باکگراوندێکی ڕووناک و شاز دروست دەکات بەبێ ئەوەی هێڵەکانی SVG تێکبدات -->
+            
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(45deg, #0f0c29, #302b63, #24243e)')">شینی تاریک</button>
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(135deg, #000000, #434343)')">ڕەش</button>
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(135deg, #1d2671, #c33764)')">مۆر</button>
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(135deg, #38ef7d, #11998e)')">سەوز</button>
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(135deg, #bdc3c7, #2c3e50)')">ڕەساسی</button>
+            <button class="opt-btn" onclick="setBgColor('linear-gradient(135deg, #a5c7f7, #6e9fe6)')">شین</button>
+            
+        </div>
+
+        <p class="label">قەبارەی نووسین</p>
+        <input type="range" min="14" max="24" value="16" id="fontSlider" oninput="changeFontSize(this.value)">
+    </div>
+
+    <div class="settings-toggle" onclick="toggleSidebar()">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="content">
+        <div class="glass-card">
+            <div class="shine"></div>
+            <div class="glow glow-top"></div>
+            <div class="glow glow-bottom"></div>
+            <div class="card-content">
+                <h2 id="user-name">بەکارهێنەر</h2>
+                <div class="sub-title">your money</div>
+                <div id="number">...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="credits">Created by Aviar</div>
+
+    <div id="bet-modal">
+        <div class="bet-card">
+            <h3 style="color:#ff0055;">بڕی پارە دیاریبکە</h3>
+            <div id="betValueDisplay" class="bet-display">10</div>
+            <input type="range" id="betRange" min="5" max="20" value="10" style="margin: 20px 0; accent-color: #ff0055;" oninput="document.getElementById('betValueDisplay').innerText = this.value">
+            
+            <div class="modal-btn-group">
+                <button class="btn" style="border-color:#00ff88; color:#00ff88;" onclick="confirmBet()">دەستپێبکە</button>
+                <button class="btn" style="border-color:#ff4b2b; color:#ff4b2b;" onclick="closeBetModal()">پاشگەستبوونەوە</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <div class="info-panel"><div id="timer">کات: 00.00 چرکە</div><div id="level">ئاست: 1</div></div>
+        <div id="game-board">
+            <div id="player"></div>
+            
+            <div id="start-screen" class="screen">
+                <h2 style="color: #ff0800;">Red Line</h2>
+                <p>بەر هێڵە سوورەکان مەکەوە. ٦٠ چرکە خۆت ڕاگرە بۆ بردنەوە!</p>
+                <button class="game-btn" onclick="startGame()">بڕۆ ناو یاری</button>
+            </div>
+            
+            <div id="gameover-screen" class="screen">
+                <h2 style="color: #ff0055;">تۆ دۆڕایت! 💀</h2>
+                <p id="survival-time">کاتێکی کەم خۆت ڕاگرت.</p>
+                <button class="game-btn" style="border-color: #ff0055; color: #ff0055;" onclick="exitGame()">گەڕانەوە بۆ سەرەکی</button>
+            </div>
+            
+            <div id="win-screen" class="screen">
+                <h2 style="color: #00ffcc;">تۆ بردتەوە! 🏆🎉</h2>
+                <button class="game-btn" onclick="exitGame()">وەرگرتنی خەڵات و گەڕانەوە</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="traffic-container">
+        <div class="traffic-hud">
+            <div id="tr-score">خاڵ: 0</div>
+        </div>
+        <canvas id="trafficCanvas"></canvas>
+        
+        <div id="tr-start-screen" class="screen" style="display: flex;">
+            <h2 style="color: #00c6ff;">Traffic Racer</h2>
+            <p>خۆت لە سەیارەکان بپارێزە! هەوڵبدە زۆرترین خاڵ بەدەست بهێنیت 🏎️</p>
+            
+            <button class="game-btn" onclick="startTrafficGameLoop()">دەستپێکردن</button>
+            <button class="game-btn" style="border-color: #f9d423; color: #f9d423; margin-top: 10px;" onclick="openGarageModal()">کڕینی سەیارەکان 🚗</button>
+            <button class="game-btn" style="border-color: #ff4b2b; color: #ff4b2b; margin-top: 10px;" onclick="closeTrafficGame()">گەڕانەوە</button>
+        </div>
+
+        <div id="tr-gameover-screen" class="screen">
+            <h2 style="color: #ff0055;">تێکشکایت! 💥</h2>
+            <p id="tr-final-score">کۆی خاڵەکانت: 0</p>
+            <button class="game-btn" onclick="startTrafficGameLoop()">دووبارە یاری بکەرەوە</button>
+            <button class="game-btn" style="border-color: #ff4b2b; color: #ff4b2b; margin-top: 10px;" onclick="closeTrafficGame()">گەڕانەوە</button>
+        </div>
+    </div>
+
+    <div id="garage-modal">
+        <div class="garage-card">
+            <h2 style="color: #00c6ff; font-size: 1.5rem; margin-bottom: 10px;">پێشانگای سەیارەکان 🛒</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem;">سەیارەیەک هەڵبژێرە بۆ بینینی وێنەکان و زانیاری زیاتر:</p>
+            
+            <div class="garage-list" id="garage-list-container"></div>
+
+            <button class="btn" style="border-color: #ff4b2b; color: #ff4b2b; width: 100%; margin-top: 10px;" onclick="closeGarageModal()">داخستن</button>
+        </div>
+    </div>
+
+    <div id="car-detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,5,10,0.92); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 6100; justify-content: center; align-items: center; padding: 20px; direction: rtl;">
+        <div class="detail-card" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 35px; width: 100%; max-width: 340px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.6); position: relative;">
+            
+            <h3 id="detail-car-name" style="color: var(--sys-color); font-size: 1.4rem; font-weight: bold; margin-bottom: 15px;">ناوی سەیارە</h3>
+            
+            <div style="position: relative; width: 100%; height: 140px; background: rgba(255,255,255,0.02); border-radius: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);">
+                <button onclick="prevCarImage()" style="position: absolute; left: 10px; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold; z-index: 10; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">‹</button>
+                <img id="detail-car-img" src="" style="height: 100px; object-fit: contain; transition: transform 0.3s ease;">
+                <button onclick="nextCarImage()" style="position: absolute; right: 10px; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold; z-index: 10; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">›</button>
+                
+                <div id="slide-dots" style="position: absolute; bottom: 8px; display: flex; gap: 6px;"></div>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 18px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05); text-align: right;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.9rem;">
+                    <span style="color: rgba(255,255,255,0.45);">خێرایی توند:</span>
+                    <span id="detail-car-speed" style="color: #fff; font-weight: bold; direction: ltr;">0 km/h</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+                    <span style="color: rgba(255,255,255,0.45);">هێزی ئەسپ (HP):</span>
+                    <span id="detail-car-hp" style="color: #fff; font-weight: bold; direction: ltr;">0 HP</span>
+                </div>
+            </div>
+
+            <div class="modal-btn-group" style="display: flex; gap: 10px; width: 100%;">
+                <button id="detail-action-btn" class="btn" style="border-color: var(--sys-color); color: var(--sys-color);" onclick="executeCarAction()">کڕین</button>
+                <button class="btn" style="border-color: #ff4b2b; color: #ff4b2b;" onclick="closeCarDetailModal()">پاشگەزبونەوە</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOkQ3BOGpFnVuYo1664QvsOh1FO36VvW4",
+            authDomain: "mybfj-6b83d.firebaseapp.com",
+            databaseURL: "https://mybfj-6b83d-default-rtdb.firebaseio.com",
+            projectId: "mybfj-6b83d",
+            storageBucket: "mybfj-6b83d.firebasestorage.app",
+            messagingSenderId: "534313885128",
+            appId: "1:534313885128:web:2ecb89d1443256839a34fd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let count = 0;
+        
+        let deviceID = localStorage.getItem('kmb_stable_device_id');
+        if (!deviceID) {
+            let screenInfo = `${window.screen.width}x${window.screen.height}`;
+            let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            let userAgent = navigator.userAgent;
+            
+            let hash = 0;
+            let combined = screenInfo + timeZone + userAgent;
+            for (let i = 0; i < combined.length; i++) {
+                const char = combined.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            let stableId = 'KMB-' + Math.abs(hash).toString(36).toUpperCase();
+            
+            if (stableId === 'KMB-0' || stableId === 'KMB-NAN') {
+                stableId = 'KMB-' + Math.random().toString(36).substring(2, 11).toUpperCase();
+            }
+            
+            deviceID = stableId;
+            localStorage.setItem('kmb_stable_device_id', deviceID);
+        }
+
+        db.ref('global_count').on('value', (snapshot) => {
+            count = snapshot.val() || 0;
+            document.getElementById('number').innerText = count;
+        });
+
+        let activeMission = null;
+        let missionCompleted = false;
+
+        db.ref('daily_mission').on('value', (snap) => {
+            activeMission = snap.val();
+            checkMissionStatus();
+        });
+
+        db.ref('device_missions/' + deviceID).on('value', (snap) => {
+            const data = snap.val() || {};
+            missionCompleted = data.completed || false;
+            checkMissionStatus();
+        });
+
+        function checkMissionStatus() {
+            if (!activeMission) return;
+            const missionBox = document.getElementById('mission-box');
+            if (!missionBox) return;
+
+            const now = new Date();
+            const currentHour = now.getHours();
+            const start = parseInt(activeMission.start_hour);
+            const end = parseInt(activeMission.end_hour);
+            const target = parseInt(activeMission.target_score);
+
+            missionBox.style.display = 'block';
+            
+            let timeText = `لە کاتژمێر ${start}:00 بۆ ${end}:00`;
+            document.getElementById('mission-text').innerText = `🎯 ئەرکی ڕۆژانە: ${timeText} کاتت هەیە یاری بکەیت و ${target} خاڵ کۆبکەیتەوە.`;
+
+            const statusLbl = document.getElementById('mission-status-lbl');
+            
+            if (missionCompleted) {
+                statusLbl.innerText = "🏆 پیرۆزە! ئەرکی ئەمڕۆت بە سەرکەوتوویی جێبەجێ کرد!";
+                statusLbl.style.color = "#00ff88";
+            } else {
+                if (currentHour >= start && currentHour < end) {
+                    statusLbl.innerText = "⚡ ئەرکەکە ئێستا چالاکە! بڕۆ یاری بکە.";
+                    statusLbl.style.color = "#00c6ff";
+                } else if (currentHour >= end) {
+                    statusLbl.innerText = "⏳ کاتی ئەرکەکە بەسەرچوو (نەتکردووە)";
+                    statusLbl.style.color = "#ff4b2b";
+                } else {
+                    statusLbl.innerText = `⏳ ئەرکەکە دەستپێدەکات لە کاتژمێر ${start}:00`;
+                    statusLbl.style.color = "#f9d423";
+                }
+            }
+        }
+
+        function syncServerGameLimits(callback) {
+            let localBackup = JSON.parse(localStorage.getItem('backup_limits') || '{"played":0,"lastReset":0}');
+            
+            db.ref('device_limits/' + deviceID).once('value', (snapshot) => {
+                let data = snapshot.val() || localBackup;
+                
+                db.ref('.info/serverTimeOffset').once('value', (offsetSnap) => {
+                    let serverTime = Date.now() + (offsetSnap.val() || 0);
+                    let oneDay = 24 * 60 * 60 * 1000;
+
+                    if (data.lastReset === 0 || (serverTime - data.lastReset >= oneDay)) {
+                        data.played = 0;
+                        data.lastReset = serverTime;
+                        db.ref('device_limits/' + deviceID).set(data);
+                    }
+                    localStorage.setItem('backup_limits', JSON.stringify(data));
+                    callback(data, serverTime);
+                }, () => {
+                    let now = Date.now();
+                    if (now - localBackup.lastReset >= 24 * 60 * 60 * 1000) { localBackup.played = 0; localBackup.lastReset = now; }
+                    callback(localBackup, now);
+                });
+            }, () => {
+                let now = Date.now();
+                if (now - localBackup.lastReset >= 24 * 60 * 60 * 1000) { localBackup.played = 0; localBackup.lastReset = now; }
+                callback(localBackup, now);
+            });
+        }
+
+        function updateBadgeAndText() {
+            syncServerGameLimits((data, serverTime) => {
+                let remaining = Math.max(0, 3 - data.played);
+                document.getElementById('badge-count').innerText = remaining;
+
+                let oneDay = 24 * 60 * 60 * 1000;
+                let nextReset = data.lastReset + oneDay;
+                let msLeft = nextReset - serverTime;
+
+                if (remaining > 0) {
+                    document.getElementById('time-left-box').innerText = "00:00";
+                    document.getElementById('time-left-box').style.color = '#00ff88';
+                    document.getElementById('time-left-box').style.borderColor = 'rgba(0, 255, 136, 0.3)';
+                    document.getElementById('time-left-box').style.background = 'rgba(0, 255, 136, 0.1)';
+                } else {
+                    if(msLeft > 0) {
+                        let hours = Math.floor(msLeft / (1000 * 60 * 60));
+                        let mins = Math.floor((msLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        
+                        let strHours = hours.toString().padStart(2, '0');
+                        let strMins = mins.toString().padStart(2, '0');
+                        
+                        document.getElementById('time-left-box').innerText = `${strHours}:${strMins}`;
+                        document.getElementById('time-left-box').style.color = '#ff4b2b';
+                        document.getElementById('time-left-box').style.borderColor = 'rgba(255, 75, 43, 0.3)';
+                        document.getElementById('time-left-box').style.background = 'rgba(255, 75, 43, 0.1)';
+                    } else {
+                        document.getElementById('time-left-box').innerText = "00:00";
+                    }
+                }
+            });
+        }
+
+        setInterval(updateBadgeAndText, 60000);
+
+        function saveNameLocal(val) {
+            if(val.trim() !== "") {
+                localStorage.setItem('local_user_name', val);
+                document.getElementById('user-name').innerText = val;
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") {
+                if (isPlaying) endGame(false); 
+                if (trIsPlaying) endTrafficGame();
+            }
+        });
+
+        function setSystemColor(clr) {
+            document.documentElement.style.setProperty('--sys-color', clr);
+            localStorage.setItem('local_sys_color', clr);
+        }
+
+        function setBgColor(bg) {
+            document.body.style.background = bg;
+            document.documentElement.style.background = bg;
+            localStorage.setItem('local_bg_color', bg);
+        }
+
+        function changeFontSize(val) {
+            document.documentElement.style.setProperty('--main-font-size', val + 'px');
+            localStorage.setItem('local_font_size', val);
+        }
+
+        function submitWelcomeName() {
+            let inputVal = document.getElementById('welcomeNameInput').value;
+            if (inputVal && inputVal.trim() !== "") {
+                let finalName = inputVal.trim();
+                localStorage.setItem('local_user_name', finalName);
+                document.getElementById('user-name').innerText = finalName;
+                document.getElementById('nameInput').value = finalName;
+                document.getElementById('name-welcome-modal').style.display = 'none';
+            } else {
+                alert("تکایە سەرەتا ناوەکەت بنووسە!");
+            }
+        }
+
+        window.onload = () => {
+            let savedName = localStorage.getItem('local_user_name');
+            
+            if (!savedName || savedName.trim() === "") {
+                document.getElementById('name-welcome-modal').style.display = 'flex';
+            } else {
+                document.getElementById('user-name').innerText = savedName;
+                document.getElementById('nameInput').value = savedName;
+            }
+
+            setSystemColor(localStorage.getItem('local_sys_color') || '#00ff88');
+            setBgColor(localStorage.getItem('local_bg_color') || 'linear-gradient(45deg, #0f0c29, #302b63, #24243e)');
+            
+            let fSize = localStorage.getItem('local_font_size') || 16;
+            changeFontSize(fSize);
+            document.getElementById('fontSlider').value = fSize;
+
+            updateBadgeAndText();
+            initTrafficCanvas();
+            
+            let activeCar = localStorage.getItem('selected_car') || '6.png';
+            trPlayerImg.src = activeCar;
+        };
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        function openBetModal() {
+            syncServerGameLimits((data) => {
+                if (data.played >= 3) {
+                    alert("تۆ ٣ یاریت کردووە بۆ ئەمڕۆ، ناتوانیت یاری بکەیتەوە تا کاتەکەت تەواو دەبێت!");
+                    return;
+                }
+                document.getElementById('betRange').value = 10;
+                document.getElementById('betValueDisplay').innerText = 10;
+                document.getElementById('bet-modal').style.display = 'flex';
+                document.getElementById('sidebar').classList.remove('open');
+            });
+        }
+
+        function closeBetModal() { document.getElementById('bet-modal').style.display = 'none'; }
+
+        let currentBet = 10;
+        
+        function confirmBet() {
+            currentBet = parseInt(document.getElementById('betRange').value);
+            
+            if (count < currentBet) {
+                alert("تۆ پارەی پێویستت نییە بۆ ئەنجامدانی ئەم یارییە!");
+                return;
+            }
+            
+            closeBetModal();
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('gameover-screen').style.display = 'none';
+            document.getElementById('win-screen').style.display = 'none';
+        }
+
+        // ================== لۆجیکی یاری Red Line ==================
+        const board = document.getElementById('game-board');
+        const player = document.getElementById('player');
+        const timerTxt = document.getElementById('timer');
+        const levelTxt = document.getElementById('level');
+        
+        let bgMusic = new Audio();
+        bgMusic.src = 'r.mp3';
+        bgMusic.loop = true;
+        bgMusic.preload = 'auto';
+
+        let isPlaying = false, startTime, gameClock, laserSpawnClock, lasers = [], difficultyLevel = 1, spawnRate = 500;
+
+        function updatePlayerPos(clientX, clientY) {
+            if(!isPlaying) return;
+            let boardRect = board.getBoundingClientRect();
+            let posX = Math.max(9, Math.min(clientX - boardRect.left, boardRect.width - 9));
+            let posY = Math.max(9, Math.min(clientY - boardRect.top, boardRect.height - 9));
+            player.style.left = posX + 'px'; player.style.top = posY + 'px';
+        }
+
+        window.addEventListener('mousemove', (e) => updatePlayerPos(e.clientX, e.clientY));
+        window.addEventListener('touchmove', (e) => { 
+            if(e.touches.length > 0) updatePlayerPos(e.touches[0].clientX, e.touches[0].clientY); 
+        }, { passive: false });
+
+        function startGame() {
+            isPlaying = true; 
+            lasers.forEach(l => l.element.remove()); 
+            lasers = [];
+            difficultyLevel = 1; 
+            spawnRate = 500;
+            document.getElementById('start-screen').style.display = 'none';
+            player.style.left = '50%'; player.style.top = '50%';
+            startTime = Date.now();
+            
+            try {
+                bgMusic.currentTime = 0;
+                let playPromise = bgMusic.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => { console.log("Audio play blocked", error); });
+                }
+            } catch(e) { console.log("Audio Error:", e); }
+
+            clearInterval(gameClock);
+            clearInterval(laserSpawnClock);
+
+            gameClock = setInterval(() => {
+                if(!isPlaying) return; 
+                let elapsed = (Date.now() - startTime) / 1000;
+                timerTxt.innerText = `کات: ${elapsed.toFixed(2)} چرکە`;
+                let currentLevel = Math.floor(elapsed / 8) + 1;
+                if(currentLevel !== difficultyLevel && currentLevel <= 7) {
+                    difficultyLevel = currentLevel;
+                    levelTxt.innerText = `ئاست: ${difficultyLevel}`;
+                    spawnRate = Math.max(100, 500 - (difficultyLevel * 60));
+                    clearInterval(laserSpawnClock); 
+                    laserSpawnClock = setInterval(spawnLaser, spawnRate);
+                }
+                if(elapsed >= 60) endGame(true);
+            }, 50);
+            
+            laserSpawnClock = setInterval(spawnLaser, spawnRate);
+            requestAnimationFrame(updateLasers);
+        }
+
+        function spawnLaser() {
+            if(!isPlaying) return;
+            const laserEl = document.createElement('div'); 
+            laserEl.className = 'laser';
+            const isHorizontal = Math.random() > 0.5;
+            let width, height, x, y, speedX, speedY, baseSpeed = 4 + difficultyLevel * 1.5;
+            
+            let bWidth = board.clientWidth;
+            let bHeight = board.clientHeight;
+
+            if(isHorizontal) {
+                width = Math.random() * 150 + 100; height = 6; y = Math.random() * (bHeight - height);
+                if(Math.random() > 0.5) { x = -width; speedX = baseSpeed; } else { x = bWidth; speedX = -baseSpeed; } speedY = 0;
+            } else {
+                width = 6; height = Math.random() * 150 + 100; x = Math.random() * (bWidth - width);
+                if(Math.random() > 0.5) { y = -height; speedY = baseSpeed; } else { y = bHeight; speedY = -baseSpeed; } speedX = 0;
+            }
+            laserEl.style.width = width + 'px'; laserEl.style.height = height + 'px'; laserEl.style.left = x + 'px'; laserEl.style.top = y + 'px';
+            board.appendChild(laserEl); lasers.push({ element: laserEl, x, y, width, height, speedX, speedY });
+        }
+
+        function updateLasers() {
+            if(!isPlaying) return;
+            const pRect = player.getBoundingClientRect();
+            let bWidth = board.clientWidth;
+            let bHeight = board.clientHeight;
+
+            for(let i = lasers.length - 1; i >= 0; i--) {
+                let l = lasers[i]; l.x += l.speedX; l.y += l.speedY;
+                l.element.style.left = l.x + 'px'; l.element.style.top = l.y + 'px';
+                
+                let lRect = l.element.getBoundingClientRect();
+                if (pRect.left < lRect.left + lRect.width && pRect.left + pRect.width > lRect.left && pRect.top < lRect.top + lRect.height && pRect.top + pRect.height > lRect.top) {
+                    endGame(false); return;
+                }
+                if(l.x < -250 || l.x > bWidth + 250 || l.y < -250 || l.y > bHeight + 250) { l.element.remove(); lasers.splice(i, 1); }
+            }
+            requestAnimationFrame(updateLasers);
+        }
+
+        function endGame(isWin) {
+            if(!isPlaying) return; 
+            isPlaying = false; 
+            clearInterval(gameClock); 
+            clearInterval(laserSpawnClock);
+            
+            try { bgMusic.pause(); } catch(e){}
+
+            let localBackup = JSON.parse(localStorage.getItem('backup_limits') || '{"played":0,"lastReset":0}');
+            localBackup.played += 1;
+            localStorage.setItem('backup_limits', JSON.stringify(localBackup));
+
+            db.ref('device_limits/' + deviceID).set(localBackup).then(() => {
+                updateBadgeAndText();
+            }).catch(() => {
+                updateBadgeAndText();
+            });
+
+            if(isWin) {
+                document.getElementById('win-screen').style.display = 'flex';
+                db.ref('global_count').set(count + currentBet);
+            } else {
+                let elapsed = (Date.now() - startTime) / 1000;
+                document.getElementById('survival-time').innerText = `تۆ تەنها ${elapsed.toFixed(2)} چرکە بەرگەت گرت`;
+                document.getElementById('gameover-screen').style.display = 'flex';
+                db.ref('global_count').set(Math.max(0, count - currentBet));
+            }
+        }
+
+        function exitGame() { 
+            lasers.forEach(l => l.element.remove()); 
+            lasers = []; 
+            try { bgMusic.pause(); } catch(e){}
+            document.getElementById('game-container').style.display = 'none'; 
+        }
+
+        // ================== لۆجیکی یاری: TRAFFIC RACER 2.5 ==================
+        const trCanvas = document.getElementById('trafficCanvas');
+        const trCtx = trCanvas.getContext('2d');
+        
+        let trIsPlaying = false;
+        let trScore = 0;
+        let trMoneyEarned = 0;
+        let trPlayer = { x: 200, y: 0, width: 65, height: 120 };
+        let trEnemies = [];
+        let trRoadLinesY = 0;
+        let trSpeed = 5;
+        let trAnimationId;
+        let trSpawnTimer = 0;
+
+        const trPlayerImg = new Image();
+        trPlayerImg.src = localStorage.getItem('selected_car') || '6.png';
+
+        const trEnemyImgs = [];
+        for (let i = 1; i <= 5; i++) {
+            const img = new Image();
+            img.src = `${i}.png`;
+            trEnemyImgs.push(img);
+        }
+
+        function initTrafficCanvas() {
+            trCanvas.width = 400;
+            trCanvas.height = window.innerHeight;
+            trPlayer.y = trCanvas.height - 160;
+            trPlayer.x = trCanvas.width / 2 - trPlayer.width / 2;
+        }
+
+        function startTrafficRacerGame() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('traffic-container').style.display = 'block';
+            document.getElementById('tr-start-screen').style.display = 'flex';
+            document.getElementById('tr-gameover-screen').style.display = 'none';
+            initTrafficCanvas();
+        }
+
+        // ================== گەراجی سەیارەکان ==================
+        const carSpecs = {
+            '6.png': {
+                name: 'motorcycle',
+                speed: '110 KM/H',
+                hp: '85 HP',
+                price: 0,
+                images: ['6.png', '6_1.png']
+            },
+            '7.png': {
+                name: 'camry 2026 xse',
+                speed: '230 KM/H',
+                hp: '232 HP',
+                price: 700,
+                images: ['7.png', '7_1.png', '7_2.png']
+            },
+            '8.png': {
+                name: 'Nissan Patrol (Y63) 2026',
+                speed: '240 KM/H',
+                hp: '425 HP',
+                price: 800,
+                images: ['8.png', '8_1.png', '8_2.png']
+            }
+        };
+
+        let currentDetailCar = '6.png';
+        let currentDetailImageIndex = 0;
+
+        function openGarageModal() {
+            renderGarageList();
+            document.getElementById('garage-modal').style.display = 'flex';
+        }
+
+        function closeGarageModal() {
+            document.getElementById('garage-modal').style.display = 'none';
+        }
+
+        function renderGarageList() {
+            const container = document.getElementById('garage-list-container');
+            container.innerHTML = '';
+
+            let activeCar = localStorage.getItem('selected_car') || '6.png';
+            let owned = JSON.parse(localStorage.getItem('owned_cars') || '["6.png"]');
+
+            Object.keys(carSpecs).forEach(key => {
+                const spec = carSpecs[key];
+                const isSelected = (key === activeCar);
+                const isOwned = owned.includes(key);
+
+                let statusText = '';
+                let statusColor = '';
+                if (isSelected) {
+                    statusText = 'چالاکە ⚡';
+                    statusColor = 'var(--sys-color)';
+                } else if (isOwned) {
+                    statusText = 'کڕدراوە';
+                    statusColor = '#00c6ff';
+                } else {
+                    statusText = `${spec.price} $`;
+                    statusColor = '#f9d423';
+                }
+
+                const itemHtml = `
+                    <div class="garage-item" onclick="openCarDetailModal('${key}')">
+                        <img src="${key}" style="height: 50px; width: 60px; object-fit: contain;">
+                        <div style="flex: 1; text-align: right; padding-right: 15px;">
+                            <h4 style="font-size: 0.95rem; margin-bottom: 2px; color: #fff;">${spec.name}</h4>
+                            <span style="font-size: 0.75rem; color: rgba(255,255,255,0.45);">${spec.speed}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; font-weight: bold; color: ${statusColor};">${statusText}</span>
+                    </div>
+                `;
+                container.innerHTML += itemHtml;
+            });
+        }
+
+        function openCarDetailModal(carImg) {
+            currentDetailCar = carImg;
+            currentDetailImageIndex = 0;
+
+            const spec = carSpecs[carImg];
+            if (!spec) return;
+
+            document.getElementById('detail-car-name').innerText = spec.name;
+            document.getElementById('detail-car-speed').innerText = spec.speed;
+            document.getElementById('detail-car-hp').innerText = spec.hp;
+
+            updateDetailImage();
+            updateDetailButton();
+
+            document.getElementById('car-detail-modal').style.display = 'flex';
+        }
+
+        function updateDetailImage() {
+            const spec = carSpecs[currentDetailCar];
+            const imgEl = document.getElementById('detail-car-img');
+            imgEl.src = spec.images[currentDetailImageIndex];
+
+            const dotsContainer = document.getElementById('slide-dots');
+            dotsContainer.innerHTML = '';
+            spec.images.forEach((img, idx) => {
+                const dot = document.createElement('span');
+                dot.style.width = '8px';
+                dot.style.height = '8px';
+                dot.style.borderRadius = '50%';
+                dot.style.background = idx === currentDetailImageIndex ? 'var(--sys-color)' : 'rgba(255, 255, 255, 0.3)';
+                dot.style.transition = '0.3s';
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function prevCarImage() {
+            const spec = carSpecs[currentDetailCar];
+            currentDetailImageIndex = (currentDetailImageIndex - 1 + spec.images.length) % spec.images.length;
+            updateDetailImage();
+        }
+
+        function nextCarImage() {
+            const spec = carSpecs[currentDetailCar];
+            currentDetailImageIndex = (currentDetailImageIndex + 1) % spec.images.length;
+            updateDetailImage();
+        }
+
+        function updateDetailButton() {
+            const btn = document.getElementById('detail-action-btn');
+            const spec = carSpecs[currentDetailCar];
+            let activeCar = localStorage.getItem('selected_car') || '6.png';
+            let owned = JSON.parse(localStorage.getItem('owned_cars') || '["6.png"]');
+
+            if (currentDetailCar === activeCar) {
+                btn.innerText = 'چالاک کراوە';
+                btn.style.borderColor = 'var(--sys-color)';
+                btn.style.color = 'var(--sys-color)';
+                btn.disabled = true;
+            } else if (owned.includes(currentDetailCar)) {
+                btn.innerText = 'چالاک بکە';
+                btn.style.borderColor = '#00c6ff';
+                btn.style.color = '#00c6ff';
+                btn.disabled = false;
+            } else {
+                btn.innerText = `کڕین بـە ${spec.price} $`;
+                btn.style.borderColor = '#f9d423';
+                btn.style.color = '#f9d423';
+                btn.disabled = false;
+            }
+        }
+
+        function executeCarAction() {
+            const spec = carSpecs[currentDetailCar];
+            let owned = JSON.parse(localStorage.getItem('owned_cars') || '["6.png"]');
+
+            if (owned.includes(currentDetailCar)) {
+                localStorage.setItem('selected_car', currentDetailCar);
+                trPlayerImg.src = currentDetailCar;
+                renderGarageList();
+                updateDetailButton();
+                closeCarDetailModal();
+                alert("سەیارەکە بە سەرکەوتوویی چالاک کرا! 🚗");
+            } else {
+                if (count >= spec.price) {
+                    if (confirm(`ئایا دڵنیایت لە کڕینی ئەم سەیارەیە بە ${spec.price} ؟`)) {
+                        let newCount = count - spec.price;
+                        db.ref('global_count').set(newCount).then(() => {
+                            owned.push(currentDetailCar);
+                            localStorage.setItem('owned_cars', JSON.stringify(owned));
+                            localStorage.setItem('selected_car', currentDetailCar);
+                            trPlayerImg.src = currentDetailCar;
+                            renderGarageList();
+                            updateDetailButton();
+                            closeCarDetailModal();
+                            alert("سەیارەکە بە سەرکەوتوویی کڕدرا و چالاک کرا! 🎉");
+                        }).catch(() => {
+                            alert("کێشەیەک لە پەیوەندی سێرڤەر ڕوویدا!");
+                        });
+                    }
+                } else {
+                    alert("پارەی پێویستت نییە بۆ کڕینی ئەم سەیارەیە! ❌");
+                }
+            }
+        }
+
+        function closeCarDetailModal() {
+            document.getElementById('car-detail-modal').style.display = 'none';
+        }
+
+        function startTrafficGameLoop() {
+            document.getElementById('tr-start-screen').style.display = 'none';
+            document.getElementById('tr-gameover-screen').style.display = 'none';
+            
+            trIsPlaying = true;
+            trScore = 0;
+            trMoneyEarned = 0;
+            trSpeed = 5;
+            trEnemies = [];
+            trPlayer.x = trCanvas.width / 2 - trPlayer.width / 2;
+            trSpawnTimer = 0;
+
+            const handleMove = (clientX) => {
+                if(!trIsPlaying) return;
+                let rect = trCanvas.getBoundingClientRect();
+                let relativeX = clientX - rect.left;
+                let scale = trCanvas.width / rect.width;
+                let actualX = relativeX * scale;
+                trPlayer.x = Math.max(35, Math.min(actualX - trPlayer.width / 2, trCanvas.width - 35 - trPlayer.width));
+            };
+
+            trCanvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
+            trCanvas.addEventListener('touchmove', (e) => {
+                if(e.touches.length > 0) handleMove(e.touches[0].clientX);
+            }, { passive: true });
+
+            updateTrafficGame();
+        }
+
+        function spawnEnemyCar() {
+            const lanes = [75, 170, 260, 335]; 
+            const lane = lanes[Math.floor(Math.random() * lanes.length)];
+            
+            const carWidth = 65; 
+            const carHeight = 120;
+            const spawnX = lane - carWidth / 2;
+
+            const isOverlap = trEnemies.some(enemy => Math.abs(enemy.y) < 180 && Math.abs(enemy.x - spawnX) < 40);
+            if(isOverlap) return;
+
+            const colors = ['#ff3b30', '#ffcc00', '#af52de', '#ff9500'];
+            const randomImgIndex = Math.floor(Math.random() * trEnemyImgs.length);
+            
+            trEnemies.push({
+                x: spawnX,
+                y: -carHeight - 20,
+                width: carWidth,
+                height: carHeight,
+                speed: trSpeed + (Math.random() * 2 - 1),
+                color: colors[Math.floor(Math.random() * colors.length)],
+                imgIndex: randomImgIndex
+            });
+        }
+
+        function updateTrafficGame() {
+            if (!trIsPlaying) return;
+
+            trScore += 1;
+            document.getElementById('tr-score').innerText = `خاڵ: ${trScore}`;
+            
+            if (trScore % 500 === 0) trSpeed += 0.5;
+
+            trCtx.fillStyle = '#2c3e50';
+            trCtx.fillRect(0, 0, trCanvas.width, trCanvas.height);
+
+            trCtx.fillStyle = '#7f8c8d';
+            trCtx.fillRect(0, 0, 30, trCanvas.height);
+            trCtx.fillRect(trCanvas.width - 30, 0, 30, trCanvas.height);
+
+            trCtx.fillStyle = '#ffffff';
+            trCtx.fillRect(30, 0, 5, trCanvas.height);
+            trCtx.fillRect(trCanvas.width - 35, 0, 5, trCanvas.height);
+
+            trRoadLinesY += trSpeed;
+            if (trRoadLinesY >= 80) trRoadLinesY = 0;
+            trCtx.fillStyle = '#ffffff';
+            for (let i = -80; i < trCanvas.height; i += 80) {
+                trCtx.fillRect(125, i + trRoadLinesY, 6, 40);
+                trCtx.fillRect(215, i + trRoadLinesY, 6, 40);
+                trCtx.fillRect(305, i + trRoadLinesY, 6, 40);
+            }
+
+            if (trPlayerImg.complete && trPlayerImg.naturalWidth !== 0) {
+                trCtx.drawImage(trPlayerImg, trPlayer.x, trPlayer.y, trPlayer.width, trPlayer.height);
+            } else {
+                trCtx.fillStyle = varColorHelper('--sys-color');
+                trCtx.fillRect(trPlayer.x, trPlayer.y, trPlayer.width, trPlayer.height);
+                trCtx.fillStyle = '#000000';
+                trCtx.fillRect(trPlayer.x + 8, trPlayer.y + 25, trPlayer.width - 16, 30);
+                trCtx.fillStyle = '#ffff00';
+                trCtx.fillRect(trPlayer.x + 6, trPlayer.y + 4, 10, 8);
+                trCtx.fillRect(trPlayer.x + trPlayer.width - 16, trPlayer.y + 4, 10, 8);
+            }
+
+            trSpawnTimer++;
+            if (trSpawnTimer > Math.max(40, 90 - trSpeed * 3)) { 
+                spawnEnemyCar();
+                trSpawnTimer = 0;
+            }
+
+            for (let i = trEnemies.length - 1; i >= 0; i--) {
+                let e = trEnemies[i];
+                e.y += e.speed;
+
+                let enemyImg = trEnemyImgs[e.imgIndex];
+                if (enemyImg && enemyImg.complete && enemyImg.naturalWidth !== 0) {
+                    trCtx.drawImage(enemyImg, e.x, e.y, e.width, e.height);
+                } else {
+                    trCtx.fillStyle = e.color;
+                    trCtx.fillRect(e.x, e.y, e.width, e.height);
+                    trCtx.fillStyle = '#000000';
+                    trCtx.fillRect(e.x + 8, e.y + e.height - 55, e.width - 16, 30);
+                    trCtx.fillRect(e.x + 8, e.y + 25, e.width - 16, 22);
+                    trCtx.fillStyle = '#ff0000';
+                    trCtx.fillRect(e.x + 6, e.y + e.height - 12, 10, 8);
+                    trCtx.fillRect(e.x + e.width - 16, e.y + e.height - 12, 10, 8);
+                }
+
+                if (
+                    trPlayer.x < e.x + e.width &&
+                    trPlayer.x + trPlayer.width > e.x &&
+                    trPlayer.y < e.y + e.height &&
+                    trPlayer.y + trPlayer.height > e.y
+                ) {
+                    endTrafficGame();
+                    return;
+                }
+
+                if (e.y > trCanvas.height) {
+                    trEnemies.splice(i, 1);
+                }
+            }
+
+            trAnimationId = requestAnimationFrame(updateTrafficGame);
+        }
+
+        function endTrafficGame() {
+            trIsPlaying = false;
+            cancelAnimationFrame(trAnimationId);
+
+            if (activeMission && !missionCompleted) {
+                const now = new Date();
+                const currentHour = now.getHours();
+                const start = parseInt(activeMission.start_hour);
+                const end = parseInt(activeMission.end_hour);
+                const target = parseInt(activeMission.target_score);
+
+                if (currentHour >= start && currentHour < end && trScore >= target) {
+                    let userName = localStorage.getItem('local_user_name') || 'بەکارهێنەری بێناو';
+                    
+                    db.ref('device_missions/' + deviceID).set({
+                        name: userName,
+                        completed: true,
+                        scoreAchieved: trScore,
+                        timestamp: Date.now()
+                    }).then(() => {
+                        alert("🎉 پیرۆزە! ئەرکی ئەمڕۆت بە سەرکەوتوویی جێبەجێ کرد!");
+                    });
+                }
+            }
+
+            document.getElementById('tr-final-score').innerText = `کۆی خاڵەکانت: ${trScore}`;
+            document.getElementById('tr-gameover-screen').style.display = 'flex';
+        }
+
+        function closeTrafficGame() {
+            trIsPlaying = false;
+            cancelAnimationFrame(trAnimationId);
+            document.getElementById('traffic-container').style.display = 'none';
+        }
+
+        function varColorHelper(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
+    </script>
+</body>
+</html>
